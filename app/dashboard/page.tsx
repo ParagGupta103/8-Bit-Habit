@@ -1,71 +1,17 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ProfileModal } from "../components/ProfileModal"
-
-interface Task {
-  id: string
-  name: string
-  completed: boolean
-  className: string
-}
-
-interface Class {
-  name: string
-  tasks: Task[]
-  level: number
-  experience: number
-}
-
-const initialClasses: Class[] = [
-  {
-    name: "Gym Bro",
-    tasks: [
-      { id: "gb1", name: "Complete a workout session", completed: false, className: "Gym Bro" },
-      { id: "gb2", name: "Track protein intake", completed: false, className: "Gym Bro" },
-      { id: "gb3", name: "Try a new exercise", completed: false, className: "Gym Bro" },
-      { id: "gb4", name: "Meal prep for the week", completed: false, className: "Gym Bro" },
-      { id: "gb5", name: "Rest and recover properly", completed: false, className: "Gym Bro" },
-    ],
-    level: 1,
-    experience: 0,
-  },
-  {
-    name: "Detox Alchemist",
-    tasks: [
-      { id: "da1", name: "Drink 8 glasses of water", completed: false, className: "Detox Alchemist" },
-      { id: "da2", name: "Eat a serving of leafy greens", completed: false, className: "Detox Alchemist" },
-      { id: "da3", name: "Practice meditation", completed: false, className: "Detox Alchemist" },
-      { id: "da4", name: "Try a new healthy recipe", completed: false, className: "Detox Alchemist" },
-      { id: "da5", name: "Get 8 hours of sleep", completed: false, className: "Detox Alchemist" },
-    ],
-    level: 1,
-    experience: 0,
-  },
-  {
-    name: "Academic Weapon",
-    tasks: [
-      { id: "aw1", name: "Study for 2 hours", completed: false, className: "Academic Weapon" },
-      { id: "aw2", name: "Complete all assignments", completed: false, className: "Academic Weapon" },
-      { id: "aw3", name: "Review notes from previous class", completed: false, className: "Academic Weapon" },
-      { id: "aw4", name: "Participate in class discussion", completed: false, className: "Academic Weapon" },
-      { id: "aw5", name: "Read an educational article", completed: false, className: "Academic Weapon" },
-    ],
-    level: 1,
-    experience: 0,
-  },
-]
-
-const EXPERIENCE_PER_LEVEL = 100
-const EXPERIENCE_PER_TASK = 20
+import { Button } from "@/components/ui/button"
+import CharacterDisplay from "../CharacterDisplay"
+import AICharacter from "../AICharacter"
+import { initialClasses, EXPERIENCE_PER_LEVEL, EXPERIENCE_PER_TASK, LEVEL_CAP, characterImages, Class, Task } from "../classes"
 
 export default function DashboardPage() {
   const [classes, setClasses] = useState<Class[]>(initialClasses)
-  const router = useRouter()
+  const [selectedSkinClass, setSelectedSkinClass] = useState("Gym Bro")
+  const [characterImage, setCharacterImage] = useState(characterImages["Gym Bro"][1])
 
   useEffect(() => {
     const savedClasses = localStorage.getItem("classes")
@@ -79,84 +25,107 @@ export default function DashboardPage() {
   }, [classes])
 
   const toggleTask = (className: string, taskId: string) => {
-    setClasses((prevClasses) =>
-      prevClasses.map((cls) => {
+    setClasses((prevClasses: Class[]) =>
+      prevClasses.map((cls: Class) => {
         if (cls.name === className) {
-          const updatedTasks = cls.tasks.map((task) =>
-            task.id === taskId ? { ...task, completed: !task.completed } : task,
+          const updatedTasks = cls.tasks.map((task: Task) =>
+            task.id === taskId ? { ...task, completed: !task.completed } : task
           )
-          const completedTasks = updatedTasks.filter((task) => task.completed).length
-          const newExperience = completedTasks * EXPERIENCE_PER_TASK
-          const newLevel = Math.floor(newExperience / EXPERIENCE_PER_LEVEL) + 1
-          return {
-            ...cls,
-            tasks: updatedTasks,
-            level: newLevel,
-            experience: newExperience % EXPERIENCE_PER_LEVEL,
-          }
+
+          // Change the selected class and update the character image
+          setSelectedSkinClass(className)
+
+          const newLevel = cls.level
+          setCharacterImage(characterImages[className][newLevel] || characterImages[className][1])
+
+          return { ...cls, tasks: updatedTasks, experience: cls.experience + EXPERIENCE_PER_TASK }
         }
         return cls
-      }),
+      })
     )
   }
 
-  const completedTasks = classes.flatMap((cls) => cls.tasks.filter((task) => task.completed))
+  const levelUpClass = (className: string) => {
+    setClasses((prevClasses: Class[]) =>
+      prevClasses.map((cls: Class) => {
+        if (cls.name === className && cls.experience >= EXPERIENCE_PER_LEVEL && cls.level < LEVEL_CAP) {
+          const newLevel = cls.level + 1
+
+          // Ensure character updates on level-up
+          setSelectedSkinClass(className)
+          setCharacterImage(characterImages[className][newLevel] || characterImages[className][1])
+
+          return {
+            ...cls,
+            level: newLevel,
+            experience: 0,
+            tasks: cls.tasks.map((task: Task) => ({ ...task, completed: false }))
+          }
+        }
+        return cls
+      })
+    )
+  }
+  const switchSkin = () => {
+    const unlockedClasses = classes.filter((cls) => cls.level > 1)
+    if (unlockedClasses.length === 0) return
+
+    const currentIndex = unlockedClasses.findIndex((cls) => cls.name === selectedSkinClass)
+    const nextIndex = (currentIndex + 1) % unlockedClasses.length
+    const nextClass = unlockedClasses[nextIndex]
+
+    setSelectedSkinClass(nextClass.name)
+
+    const newLevel = nextClass.level
+    if (characterImages[nextClass.name][newLevel]) {
+      setCharacterImage(characterImages[nextClass.name][newLevel])
+    } else {
+      setCharacterImage(characterImages[nextClass.name][1]) // Default if level-based skin is missing
+    }
+  }
 
   return (
-    <div className="flex h-screen">
-      {/* Left Section: Character Display */}
-      <div className="w-1/3 flex flex-col items-center justify-center bg-gray-900 p-4 border-r border-gray-700">
-        <h2 className="text-white text-xl mb-4">Your Character</h2>
-        <div className="w-40 h-40 bg-gray-700 flex items-center justify-center rounded-lg">
-          <img src="/character.png" alt="Character" className="w-full h-full object-contain" />
-        </div>
-      </div>
+    <div className="flex h-screen relative">
+      {/* Character Section */}
+      <CharacterDisplay characterImage={characterImage} switchSkin={switchSkin} />
 
       {/* Right Section: Habit Tracking Dashboard */}
-      <div className="w-2/3 min-h-screen bg-black text-white p-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-4xl font-bold">8 Bit Habit Dashboard</h1>
-            <ProfileModal completedTasks={completedTasks} />
-          </div>
-
-          <div className="space-y-8">
-            {classes.map((cls) => (
-              <div key={cls.name} className="bg-gray-800 p-6 rounded-lg">
-                <h2 className="text-2xl font-semibold mb-4">{cls.name}</h2>
-                <div className="flex items-center mb-4">
-                  <div className="text-lg mr-4">Level {cls.level}</div>
-                  <Progress value={(cls.experience / EXPERIENCE_PER_LEVEL) * 100} className="flex-grow" />
-                  <div className="text-sm ml-4">
-                    {cls.experience}/{EXPERIENCE_PER_LEVEL} XP
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {cls.tasks.map((task) => (
-                    <div key={task.id} className="flex items-center">
-                      <Checkbox
-                        id={task.id}
-                        checked={task.completed}
-                        onCheckedChange={() => toggleTask(cls.name, task.id)}
-                      />
-                      <label
-                        htmlFor={task.id}
-                        className="ml-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        {task.name}
-                      </label>
-                    </div>
-                  ))}
-                </div>
+      <div className="w-2/3 flex items-center justify-center min-h-screen bg-black text-white p-8">
+        <div className="w-full max-w-3xl">
+          {classes.map((cls: Class) => (
+            <div key={cls.name} className="bg-gray-800 p-6 rounded-lg mb-6">
+              <h2 className="text-2xl font-semibold mb-4">{cls.name} - Level {cls.level}</h2>
+              <div className="flex items-center mb-4">
+                <Progress value={(cls.experience / EXPERIENCE_PER_LEVEL) * 100} className="flex-grow" />
+                <span className="ml-4">{(cls.experience / EXPERIENCE_PER_LEVEL) * 100}%</span>
               </div>
-            ))}
-          </div>
+              {cls.experience >= EXPERIENCE_PER_LEVEL && cls.level < LEVEL_CAP && (
+                <Button className="bg-green-500 mb-4" onClick={() => levelUpClass(cls.name)}>
+                  Level Up
+                </Button>
+              )}
+              {cls.tasks.map((task: Task) => (
+                <div key={task.id} className="flex items-center">
+                  <Checkbox id={task.id} checked={task.completed} onCheckedChange={() => toggleTask(cls.name, task.id)}
+                    className="mr-4 border-white" />
+                  <label htmlFor={task.id} className="ml-2">{task.name}</label>
+                </div>
+              ))}
+            </div>
+          ))}
+          
 
-          <Button onClick={() => router.push("/")} className="mt-8" variant="outline">
-            Back to Game
-          </Button>
         </div>
+         {/* AI Persona Component */}
+      <AICharacter 
+  activeClass={selectedSkinClass} 
+  level={classes.find(cls => cls.name === selectedSkinClass)?.level || 1} 
+  experience={classes.find(cls => cls.name === selectedSkinClass)?.experience || 0} 
+/>
       </div>
+
+     
+
     </div>
   )
 }
