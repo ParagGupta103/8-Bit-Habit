@@ -103,50 +103,60 @@ export default function DashboardPage() {
   const completedTasks = classes.flatMap((cls) => cls.tasks.filter((task) => task.completed))
 
   return (
-    <div className="min-h-screen bg-black text-white p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold">8 Bit Habit Dashboard</h1>
-          <ProfileModal completedTasks={completedTasks} />
+    <div className="flex h-screen">
+      {/* Left Section: Character Display */}
+      <div className="w-1/3 flex flex-col items-center justify-center bg-gray-900 p-4 border-r border-gray-700">
+        <h2 className="text-white text-xl mb-4">Your Character</h2>
+        <div className="w-40 h-40 bg-gray-700 flex items-center justify-center rounded-lg">
+          <img src="/character.png" alt="Character" className="w-full h-full object-contain" />
         </div>
+      </div>
 
-        <div className="space-y-8">
-          {classes.map((cls) => (
-            <div key={cls.name} className="bg-gray-800 p-6 rounded-lg">
-              <h2 className="text-2xl font-semibold mb-4">{cls.name}</h2>
-              <div className="flex items-center mb-4">
-                <div className="text-lg mr-4">Level {cls.level}</div>
-                <Progress value={(cls.experience / EXPERIENCE_PER_LEVEL) * 100} className="flex-grow" />
-                <div className="text-sm ml-4">
-                  {cls.experience}/{EXPERIENCE_PER_LEVEL} XP
+      {/* Right Section: Habit Tracking Dashboard */}
+      <div className="w-2/3 min-h-screen bg-black text-white p-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-4xl font-bold">8 Bit Habit Dashboard</h1>
+            <ProfileModal completedTasks={completedTasks} />
+          </div>
+
+          <div className="space-y-8">
+            {classes.map((cls) => (
+              <div key={cls.name} className="bg-gray-800 p-6 rounded-lg">
+                <h2 className="text-2xl font-semibold mb-4">{cls.name}</h2>
+                <div className="flex items-center mb-4">
+                  <div className="text-lg mr-4">Level {cls.level}</div>
+                  <Progress value={(cls.experience / EXPERIENCE_PER_LEVEL) * 100} className="flex-grow" />
+                  <div className="text-sm ml-4">
+                    {cls.experience}/{EXPERIENCE_PER_LEVEL} XP
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {cls.tasks.map((task) => (
+                    <div key={task.id} className="flex items-center">
+                      <Checkbox
+                        id={task.id}
+                        checked={task.completed}
+                        onCheckedChange={() => toggleTask(cls.name, task.id)}
+                      />
+                      <label
+                        htmlFor={task.id}
+                        className="ml-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        {task.name}
+                      </label>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div className="space-y-2">
-                {cls.tasks.map((task) => (
-                  <div key={task.id} className="flex items-center">
-                    <Checkbox
-                      id={task.id}
-                      checked={task.completed}
-                      onCheckedChange={() => toggleTask(cls.name, task.id)}
-                    />
-                    <label
-                      htmlFor={task.id}
-                      className="ml-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      {task.name}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        <Button onClick={() => router.push("/")} className="mt-8" variant="outline">
-          Back to Game
-        </Button>
+          <Button onClick={() => router.push("/")} className="mt-8" variant="outline">
+            Back to Game
+          </Button>
+        </div>
       </div>
     </div>
   )
 }
-

@@ -62,11 +62,6 @@ export function ProfileModal({ completedTasks }: ProfileModalProps) {
               className="hidden"
               id="profile-image-upload"
             />
-            <label htmlFor="profile-image-upload" className="cursor-pointer">
-              <Button variant="outline" size="sm" as="span">
-                Upload Picture
-              </Button>
-            </label>
           </div>
           <div>
             <h3 className="mb-2 text-lg font-semibold">Completed Tasks</h3>
